@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.andy-spike.herdr-theme-sync",
+  "name": "Herdr Theme Sync",
+  "version": "1.0.0",
+  "author": "Andy Spike",
+  "license": "MIT",
+  "description": "Keeps Herdr colors in sync with the active Omarchy theme.",
+  "kinds": ["service"],
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
