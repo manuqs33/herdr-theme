@@ -14,6 +14,21 @@ from pathlib import Path
 THEME = Path(os.environ.get("OMARCHY_THEME_PATH", Path.home() / ".local/state/omarchy/current/theme/colors.toml"))
 CONFIG = Path(os.environ.get("HERDR_CONFIG_PATH", Path.home() / ".config/herdr/config.toml"))
 
+ANSI_ALIASES = {
+    "selection": "selection_background",
+    "muted": "color8",
+    "dark_foreground": "color8",
+    "light_foreground": "color7",
+    "bright_foreground": "color15",
+    "red": "color1",
+    "green": "color2",
+    "yellow": "color3",
+    "orange": "color3",
+    "blue": "color4",
+    "magenta": "color5",
+    "cyan": "color6",
+}
+
 
 def rgb(color: str) -> tuple[int, int, int]:
     value = color.removeprefix("#")
@@ -31,15 +46,31 @@ def contrast(a: str, b: str) -> float:
     return (light + 0.05) / (dark + 0.05)
 
 
+def blend(background: str, foreground: str, opacity: float) -> str:
+    channels = [round(bg * (1 - opacity) + fg * opacity) for bg, fg in zip(rgb(background), rgb(foreground))]
+    return "#" + "".join(f"{channel:02x}" for channel in channels)
+
+
 def first_readable(colors: dict[str, str], background: str, *names: str) -> str:
     candidates = [colors[name] for name in names if name in colors]
     return next((color for color in candidates if contrast(color, background) >= 4.5), max(candidates, key=lambda color: contrast(color, background)))
 
 
+def semantic_colors(colors: dict[str, str]) -> dict[str, str]:
+    normalized = colors.copy()
+    for name, ansi_name in ANSI_ALIASES.items():
+        if name not in normalized and ansi_name in colors:
+            normalized[name] = colors[ansi_name]
+    return normalized
+
+
 def custom_theme(colors: dict[str, str]) -> dict[str, str]:
+    colors = semantic_colors(colors)
     background = colors["background"]
     foreground = colors["foreground"]
     selection = colors.get("selection", colors.get("lighter_background", background))
+    if contrast(foreground, selection) < 4.5:
+        selection = blend(background, foreground, 0.18)
     accent = first_readable(colors, background, "accent", "blue", "magenta", "cyan", "green", "red", "orange", "foreground")
     secondary = first_readable(colors, background, "muted", "light_foreground", "dark_foreground", "bright_foreground", "foreground")
 
@@ -129,6 +160,32 @@ def self_test() -> None:
     rendered = render(custom_rows, theme)
     assert 'fg = "' + theme["subtext0"] + '"' in rendered
     assert '"terminal_title"' in rendered
+
+    ansi = {
+        "accent": "#0088ff",
+        "foreground": "#ffffff",
+        "background": "#122738",
+        "selection_background": "#0050a4",
+        **{f"color{i}": color for i, color in enumerate([
+            "#000000", "#ff628c", "#3ad900", "#ffc600",
+            "#0088ff", "#fb94ff", "#80fcff", "#ffffff",
+            "#0050a4", "#ff628c", "#3ad900", "#ffc600",
+            "#0088ff", "#fb94ff", "#80fcff", "#ffffff",
+        ])},
+    }
+    ansi_theme = custom_theme(ansi)
+    assert ansi_theme["surface1"] == ansi["selection_background"]
+    assert ansi_theme["red"] == ansi["color1"]
+    assert ansi_theme["green"] == ansi["color2"]
+    assert ansi_theme["yellow"] == ansi["color3"]
+    assert ansi_theme["blue"] == ansi["color4"]
+    assert ansi_theme["mauve"] == ansi["color5"]
+    assert ansi_theme["teal"] == ansi["color6"]
+
+    ansi["selection_background"] = ansi["foreground"]
+    ansi_theme = custom_theme(ansi)
+    assert ansi_theme["surface_dim"] == blend(ansi["background"], ansi["foreground"], 0.18)
+    assert contrast(ansi_theme["text"], ansi_theme["surface_dim"]) >= 4.5
 
 
 if __name__ == "__main__":

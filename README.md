@@ -33,4 +33,4 @@ omarchy plugin validate .
 python3 sync-herdr-theme.py --self-test
 ```
 
-The plugin only reads Omarchy's active `colors.toml`. It writes Herdr's user config and calls `herdr server reload-config`.
+The plugin reads Omarchy's active `colors.toml`, supporting both semantic color names and ANSI `color0` through `color15` palettes. Low-contrast selection colors are replaced with a subtle surface derived from the palette's foreground and background. It writes Herdr's user config and calls `herdr server reload-config`.
