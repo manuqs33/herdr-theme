@@ -18,6 +18,10 @@ omarchy plugin add https://github.com/andy-spike/herdr-theme.git --enable
 
 The service applies the current palette when it starts and after every Omarchy theme change.
 
+## Support
+
+This plugin is a temporary workaround for Herdr's terminal theme handling. It will be supported only until Herdr fixes the underlying problem. After that fix reaches a Herdr release, this plugin will be archived.
+
 ## Remove
 
 ```sh
@@ -33,4 +37,4 @@ omarchy plugin validate .
 python3 sync-herdr-theme.py --self-test
 ```
 
-The plugin only reads Omarchy's active `colors.toml`. It writes Herdr's user config and calls `herdr server reload-config`.
+The plugin reads Omarchy's active `colors.toml`. It supports semantic color names, ANSI `color0` through `color15` names, and palettes that use both formats. Palettes must define `background` and `foreground` because ANSI color slots do not define terminal defaults. It writes Herdr's user config and calls `herdr server reload-config`.
