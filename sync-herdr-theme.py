@@ -82,8 +82,6 @@ def custom_theme(colors: dict[str, str]) -> dict[str, str]:
         "surface0": "reset",
         "surface1": selection,
         "surface_dim": selection,
-        "active_row_bg": selection,
-        "selection_bg": selection,
         "overlay0": secondary,
         "overlay1": foreground,
         "text": foreground,
@@ -130,6 +128,7 @@ def render(config: str, theme: dict[str, str]) -> str:
 
 def apply(theme_path: Path = THEME, config_path: Path = CONFIG, reload_server: bool = True) -> None:
     colors = tomllib.loads(theme_path.read_text())
+    config_path = config_path.resolve()  # a dotfiles manager may symlink this file
     config_path.parent.mkdir(parents=True, exist_ok=True)
     current = config_path.read_text() if config_path.exists() else '[theme]\nname = "terminal"\n'
     updated = render(current, custom_theme(colors))
@@ -183,15 +182,13 @@ def self_test() -> None:
     assert ansi_theme["blue"] == ansi["color4"]
     assert ansi_theme["mauve"] == ansi["color5"]
     assert ansi_theme["teal"] == ansi["color6"]
-    assert ansi_theme["active_row_bg"] == ansi_theme["surface_dim"]
-    assert ansi_theme["selection_bg"] == ansi_theme["surface_dim"]
 
     ansi["red"] = "#abcdef"
     assert custom_theme(ansi)["red"] == ansi["red"]
 
     ansi["selection_background"] = ansi["foreground"]
     ansi_theme = custom_theme(ansi)
-    assert contrast(ansi_theme["text"], ansi_theme["selection_bg"]) >= 4.5
+    assert contrast(ansi_theme["text"], ansi_theme["surface_dim"]) >= 4.5
 
     try:
         custom_theme({key: value for key, value in ansi.items() if key != "foreground"})
