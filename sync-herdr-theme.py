@@ -15,7 +15,6 @@ THEME = Path(os.environ.get("OMARCHY_THEME_PATH", Path.home() / ".local/state/om
 CONFIG = Path(os.environ.get("HERDR_CONFIG_PATH", Path.home() / ".config/herdr/config.toml"))
 
 ANSI_ALIASES = {
-    "selection": "selection_background",
     "muted": "color8",
     "red": "color1",
     "green": "color2",
@@ -69,16 +68,16 @@ def custom_theme(colors: dict[str, str]) -> dict[str, str]:
     colors = semantic_colors(colors)
     background = colors["background"]
     foreground = colors["foreground"]
-    selection = colors.get("selection", colors.get("lighter_background", background))
-    if contrast(foreground, selection) < 4.5:
-        subtle_selection = blend(background, foreground, 0.18)
-        selection = subtle_selection if contrast(foreground, subtle_selection) >= 4.5 else background
+    # a theme's own selection color can be a heavy, saturated block; a faint tint of
+    # the foreground reads as a shadow in every theme
+    selection = blend(background, foreground, 0.12)
     accent = first_readable(colors, background, "accent", "blue", "magenta", "cyan", "green", "red", "orange", "foreground")
     secondary = first_readable(colors, background, "muted", "light_foreground", "dark_foreground", "bright_foreground", "foreground")
 
     return {
         "accent": accent,
         "panel_bg": background,
+        "active_row_bg": selection,  # the highlighted sidebar row
         "surface0": "reset",
         "surface1": selection,
         "surface_dim": selection,
@@ -186,9 +185,9 @@ def self_test() -> None:
     ansi["red"] = "#abcdef"
     assert custom_theme(ansi)["red"] == ansi["red"]
 
-    ansi["selection_background"] = ansi["foreground"]
-    ansi_theme = custom_theme(ansi)
     assert contrast(ansi_theme["text"], ansi_theme["surface_dim"]) >= 4.5
+    assert ansi_theme["surface_dim"] != ansi_theme["panel_bg"]
+    assert contrast(ansi_theme["text"], ansi_theme["active_row_bg"]) >= 4.5
 
     try:
         custom_theme({key: value for key, value in ansi.items() if key != "foreground"})
